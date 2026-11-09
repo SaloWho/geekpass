@@ -1,0 +1,23 @@
+@inherits UmbracoViewPage
+@{
+    Layout = "~/Views/_Layout.cshtml";
+    DateTime startsAt = Model.Value<DateTime>(ContentModel.Properties.StartsAt);
+    DateTime endsAt = Model.Value<DateTime>(ContentModel.Properties.EndsAt);
+    bool bookable = Model.Value<bool>(ContentModel.Properties.Bookable);
+}
+<article class="event" data-event-key="@Model.Key">
+    <p class="eyebrow">@startsAt.ToString("dddd d MMMM yyyy") · @startsAt.ToString("HH:mm")–@endsAt.ToString("HH:mm") · @(Model.Value<string>(ContentModel.Properties.Venue))</p>
+    <h1>@Model.Name</h1>
+    <p class="subtitle">@(Model.Value<string>(ContentModel.Properties.Subtitle))</p>
+    <p class="lead">@(Model.Value<string>(ContentModel.Properties.Summary))</p>
+    <p>@(Model.Value<string>(ContentModel.Properties.Description))</p>
+
+    @if (bookable)
+    {
+        @* Stage 2 replaces this placeholder with live availability from the Booking module. *@
+        <aside class="booking-placeholder">
+            <strong>Booking opens soon.</strong>
+            <span>@(Model.Value<int>(ContentModel.Properties.RequestedCapacity)) seats planned.</span>
+        </aside>
+    }
+</article>

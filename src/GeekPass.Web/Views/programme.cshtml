@@ -1,0 +1,28 @@
+@inherits UmbracoViewPage
+@{
+    Layout = "~/Views/_Layout.cshtml";
+    var events = Model.Children()
+        .Where(x => x.ContentType.Alias == ContentModel.Aliases.FestivalEvent)
+        .OrderBy(x => x.Value<DateTime>(ContentModel.Properties.StartsAt))
+        .ToList();
+}
+<h1>@Model.Name</h1>
+<p class="lead">@(Model.Value<string>(ContentModel.Properties.Intro))</p>
+
+@if (events.Count == 0)
+{
+    <p>No published events yet.</p>
+}
+else
+{
+    <ul class="event-list">
+        @foreach (IPublishedContent item in events)
+        {
+            <li class="event-card">
+                <time>@(item.Value<DateTime>(ContentModel.Properties.StartsAt).ToString("ddd d MMM, HH:mm"))</time>
+                <h2><a href="@item.Url()">@item.Name</a></h2>
+                <p>@(item.Value<string>(ContentModel.Properties.Summary))</p>
+            </li>
+        }
+    </ul>
+}

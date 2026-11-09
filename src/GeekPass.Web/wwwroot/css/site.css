@@ -1,0 +1,68 @@
+/* Minimal base styles. The full GeekPass theme arrives in Issue #2. */
+:root {
+  --gp-bg: #0f0d17;
+  --gp-surface: #1a1726;
+  --gp-text: #ece9f5;
+  --gp-muted: #a39fb8;
+  --gp-primary: #8b5cf6;
+  --gp-accent: #f59e0b;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--gp-bg);
+  color: var(--gp-text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.6;
+}
+
+a { color: var(--gp-primary); }
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--gp-surface);
+}
+
+.site-header nav a { margin-left: 1rem; color: var(--gp-text); text-decoration: none; }
+.brand { font-weight: 800; font-size: 1.25rem; color: var(--gp-text); text-decoration: none; }
+
+.container { max-width: 60rem; margin: 0 auto; padding: 2rem 1.5rem; }
+
+.hero h1 { font-size: clamp(2rem, 6vw, 3.5rem); margin: 0 0 0.5rem; }
+
+.button {
+  display: inline-block;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  background: var(--gp-accent);
+  color: #1a1200;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.lead { font-size: 1.15rem; color: var(--gp-muted); }
+.eyebrow { color: var(--gp-accent); font-weight: 600; margin: 0; }
+.subtitle { font-size: 1.25rem; margin-top: 0; color: var(--gp-muted); }
+
+.event-list { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.event-card { background: var(--gp-surface); padding: 1rem 1.25rem; border-radius: 0.75rem; }
+.event-card h2 { margin: 0.25rem 0; font-size: 1.25rem; }
+.event-card time { color: var(--gp-accent); font-size: 0.9rem; }
+
+.booking-placeholder {
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--gp-primary);
+  border-radius: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.site-footer { text-align: center; color: var(--gp-muted); font-size: 0.85rem; padding: 2rem 1rem; }

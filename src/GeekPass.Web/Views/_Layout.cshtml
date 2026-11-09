@@ -1,0 +1,31 @@
+@inherits UmbracoViewPage
+@{
+    IPublishedContent home = Model.Root();
+    IPublishedContent? programme = home.Children().FirstOrDefault(x => x.ContentType.Alias == ContentModel.Aliases.Programme);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@Model.Name · GeekPass</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="@home.Url()">GeekPass</a>
+        <nav>
+            @if (programme is not null)
+            {
+                <a href="@programme.Url()">Programme</a>
+            }
+        </nav>
+    </header>
+    <main class="container">
+        @RenderBody()
+    </main>
+    <footer class="site-footer">
+        <p>GeekPass Fest is a learning project. All names and data are synthetic.</p>
+    </footer>
+</body>
+</html>
