@@ -75,7 +75,7 @@ public sealed class DemoContentSeeder(
         // Umbraco writes the template content to Views/{alias}.cshtml when it creates a template.
         // Passing the content of our committed view keeps that file unchanged.
         var viewPath = Path.Combine(environment.ContentRootPath, "Views", $"{alias}.cshtml");
-        var content = File.Exists(viewPath) ? await File.ReadAllTextAsync(viewPath) : null;
+        var content = System.IO.File.Exists(viewPath) ? await System.IO.File.ReadAllTextAsync(viewPath) : null;
 
         Attempt<ITemplate, TemplateOperationStatus> result =
             await templateService.CreateAsync(name, alias, content, SuperUserKey, key);
@@ -207,14 +207,14 @@ public sealed class DemoContentSeeder(
 
     private async Task EnsureHomeContentAsync()
     {
-        if (await contentEditingService.GetAsync(Content.Home) is not null)
+        if (await contentEditingService.GetAsync(Documents.Home) is not null)
         {
             return;
         }
 
         await CreateContentAsync(new ContentCreateModel
         {
-            Key = Content.Home,
+            Key = Documents.Home,
             ContentTypeKey = DocumentTypes.Home,
             TemplateKey = Templates.Home,
             Variants = [new VariantModel { Name = "GeekPass Fest 2027" }],
@@ -224,20 +224,20 @@ public sealed class DemoContentSeeder(
                 Value(Properties.HeroSubtitle, "Three days of fantasy, sci-fi and tabletop games in Tbilisi. Synthetic demo data."),
             ],
         });
-        await PublishAsync(Content.Home, "Home");
+        await PublishAsync(Documents.Home, "Home");
     }
 
     private async Task EnsureProgrammeContentAsync()
     {
-        if (await contentEditingService.GetAsync(Content.Programme) is not null)
+        if (await contentEditingService.GetAsync(Documents.Programme) is not null)
         {
             return;
         }
 
         await CreateContentAsync(new ContentCreateModel
         {
-            Key = Content.Programme,
-            ParentKey = Content.Home,
+            Key = Documents.Programme,
+            ParentKey = Documents.Home,
             ContentTypeKey = DocumentTypes.Programme,
             TemplateKey = Templates.Programme,
             Variants = [new VariantModel { Name = "Programme" }],
@@ -246,18 +246,18 @@ public sealed class DemoContentSeeder(
                 Value(Properties.Intro, "Tournaments, talks and workshops. Seats are limited, so book early."),
             ],
         });
-        await PublishAsync(Content.Programme, "Programme");
+        await PublishAsync(Documents.Programme, "Programme");
     }
 
     private async Task EnsureCatanEventAsync()
     {
-        if (await contentEditingService.GetAsync(Content.CatanChampionship) is null)
+        if (await contentEditingService.GetAsync(Documents.CatanChampionship) is null)
         {
             // Created as a draft on purpose: publishing it is step 2 of the editor demo (README).
             await CreateContentAsync(new ContentCreateModel
             {
-                Key = Content.CatanChampionship,
-                ParentKey = Content.Programme,
+                Key = Documents.CatanChampionship,
+                ParentKey = Documents.Programme,
                 ContentTypeKey = DocumentTypes.FestivalEvent,
                 TemplateKey = Templates.FestivalEvent,
                 Variants = [new VariantModel { Name = "Catan Championship" }],
@@ -280,7 +280,7 @@ public sealed class DemoContentSeeder(
 
         if (options.Value.PublishCatanEvent)
         {
-            await PublishAsync(Content.CatanChampionship, "Catan Championship");
+            await PublishAsync(Documents.CatanChampionship, "Catan Championship");
         }
     }
 
