@@ -61,12 +61,14 @@ jobs:
         working-directory: src/GeekPass.Web
         run: |
           nohup dotnet run --no-build --no-launch-profile > "$RUNNER_TEMP/web.log" 2>&1 &
+          # Umbraco answers HTTP before our seeder (UmbracoApplicationStartedNotification) has finished,
+          # so wait for the seeder's log line instead of the first 200.
           for i in $(seq 1 90); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5080/ || true)
-            if [ "$code" = "200" ]; then echo "Site is up after ~$((i*2))s"; exit 0; fi
+            if grep -q "GeekPass demo content is ready" "$RUNNER_TEMP/web.log"; then echo "Seeded after ~$((i*2))s"; exit 0; fi
+            if grep -q "GeekPass demo content: creating" "$RUNNER_TEMP/web.log"; then echo "Seeding failed"; exit 1; fi
             sleep 2
           done
-          echo "Site did not return 200 in time"; exit 1
+          echo "Seeding did not finish in time"; exit 1
 
       - name: Smoke checks
         run: |
