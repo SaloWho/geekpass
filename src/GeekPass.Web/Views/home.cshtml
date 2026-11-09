@@ -1,0 +1,13 @@
+@inherits UmbracoViewPage
+@{
+    Layout = "~/Views/_Layout.cshtml";
+    IPublishedContent? programme = Model.Children().FirstOrDefault(x => x.ContentType.Alias == ContentModel.Aliases.Programme);
+}
+<section class="hero">
+    <h1>@(Model.Value<string>(ContentModel.Properties.HeroTitle))</h1>
+    <p>@(Model.Value<string>(ContentModel.Properties.HeroSubtitle))</p>
+    @if (programme is not null)
+    {
+        <a class="button" href="@programme.Url()">See the programme</a>
+    }
+</section>

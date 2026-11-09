@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json allows any 10.0.1xx+ feature band
+
+      - name: Restore
+        run: dotnet restore GeekPass.slnx
+
+      - name: Build (warnings are errors)
+        run: dotnet build GeekPass.slnx --no-restore -c Release
+
+  smoke:
+    name: Startup smoke test (SQL Server + unattended install + demo content)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GEEKPASS_DB_PASSWORD: Ci_Only_Pa55word!
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://localhost:5080
+      ConnectionStrings__umbracoDbDSN: Server=localhost,1433;Database=GeekPass;User Id=sa;Password=Ci_Only_Pa55word!;TrustServerCertificate=true
+      Umbraco__CMS__Unattended__UnattendedUserPassword: Ci-Only-Admin-Pa55word
+      # In CI nobody clicks Publish, so let the seeder publish the Catan event.
+      GeekPass__DemoContent__PublishCatanEvent: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Start SQL Server and create the database
+        run: |
+          docker compose up -d --wait sqlserver
+          docker compose run --rm db-init
+
+      - name: Build
+        run: dotnet build src/GeekPass.Web -c Debug
+
+      - name: Run the site
+        working-directory: src/GeekPass.Web
+        run: |
+          nohup dotnet run --no-build --no-launch-profile > "$RUNNER_TEMP/web.log" 2>&1 &
+          for i in $(seq 1 90); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5080/ || true)
+            if [ "$code" = "200" ]; then echo "Site is up after ~$((i*2))s"; exit 0; fi
+            sleep 2
+          done
+          echo "Site did not return 200 in time"; exit 1
+
+      - name: Smoke checks
+        run: |
+          set -euo pipefail
+          check() {
+            local path="$1" expected="$2"
+            body=$(curl -sf "http://localhost:5080$path")
+            echo "$body" | grep -q "$expected" || { echo "FAIL $path: missing '$expected'"; exit 1; }
+            echo "OK   $path contains '$expected'"
+          }
+          check "/" "GeekPass Fest 2027"
+          check "/programme/" "Catan Championship"
+          check "/programme/catan-championship/" "Settlers Cup"
+          check "/programme/catan-championship/" "Booking opens soon"
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5080/umbraco)
+          [ "$code" = "200" ] || { echo "FAIL backoffice returned $code"; exit 1; }
+          echo "OK   /umbraco returned 200"
+
+      - name: Seeding is idempotent (restart the site)
+        working-directory: src/GeekPass.Web
+        run: |
+          pkill -f GeekPass.Web || true
+          sleep 3
+          nohup dotnet run --no-build --no-launch-profile > "$RUNNER_TEMP/web-restart.log" 2>&1 &
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5080/programme/catan-championship/ || true)
+            if [ "$code" = "200" ]; then echo "Restarted OK"; exit 0; fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Site log
+        if: always()
+        run: |
+          cat "$RUNNER_TEMP/web.log" || true
+          echo "----- after restart -----"
+          cat "$RUNNER_TEMP/web-restart.log" || true
