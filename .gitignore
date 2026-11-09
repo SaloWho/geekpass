@@ -1,0 +1,34 @@
+# --- .NET build output ---
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.rsuser
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+TestResults/
+*.trx
+coverage*.xml
+
+# --- Local secrets ---
+.env
+appsettings.Local.json
+*.pfx
+
+# --- Umbraco runtime files ---
+**/umbraco/Data/
+**/umbraco/Logs/
+**/umbraco/mediacache/
+**/umbraco/models/
+**/wwwroot/media/
+appsettings-schema.json
+appsettings-schema.*.json
+umbraco-package-schema.json
+
+# --- OS ---
+.DS_Store
+Thumbs.db
