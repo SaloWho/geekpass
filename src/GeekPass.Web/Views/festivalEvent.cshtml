@@ -1,16 +1,28 @@
 @inherits UmbracoViewPage
+@inject ProgrammeReader ProgrammeReader
+@inject FestivalClock Clock
 @{
     Layout = "~/Views/_Layout.cshtml";
-    DateTime startsAt = Model.Value<DateTime>(ContentModel.Properties.StartsAt);
-    DateTime endsAt = Model.Value<DateTime>(ContentModel.Properties.EndsAt);
+    ProgrammeEvent item = ProgrammeReader.Map(Model);
     bool bookable = Model.Value<bool>(ContentModel.Properties.Bookable);
 }
-<article class="event" data-event-key="@Model.Key">
-    <p class="eyebrow">@startsAt.ToString("dddd d MMMM yyyy") · @startsAt.ToString("HH:mm")–@endsAt.ToString("HH:mm") · @(Model.Value<string>(ContentModel.Properties.Venue))</p>
-    <h1>@Model.Name</h1>
+<article class="event" data-event-key="@item.Key">
+    <p class="eyebrow">
+        @if (!string.IsNullOrEmpty(item.Track))
+        {
+            <span class="track-badge" data-track="@item.Track">@item.Track</span>
+        }
+        <time datetime="@item.StartsAt.ToString("O")">@item.StartsAt.ToString("dddd d MMMM yyyy · HH:mm")</time>–@item.EndsAt.ToString("HH:mm")
+        <span class="muted">(@Clock.OffsetLabel(item.StartsAt))</span>
+    </p>
+    <h1>@item.Name</h1>
     <p class="subtitle">@(Model.Value<string>(ContentModel.Properties.Subtitle))</p>
-    <p class="lead">@(Model.Value<string>(ContentModel.Properties.Summary))</p>
-    <p>@(Model.Value<string>(ContentModel.Properties.Description))</p>
+    <p class="lead">@item.Summary</p>
+    <p><strong>Venue:</strong> @item.Venue</p>
+
+    <div class="rich-text">
+        @(Model.Value<IHtmlEncodedString>(ContentModel.Properties.Description))
+    </div>
 
     @if (bookable)
     {

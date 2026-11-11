@@ -1,28 +1,41 @@
 @inherits UmbracoViewPage
+@inject ProgrammeReader ProgrammeReader
+@inject FestivalClock Clock
 @{
     Layout = "~/Views/_Layout.cshtml";
-    var events = Model.Children()
-        .Where(x => x.ContentType.Alias == ContentModel.Aliases.FestivalEvent)
-        .OrderBy(x => x.Value<DateTime>(ContentModel.Properties.StartsAt))
-        .ToList();
+    IReadOnlyList<ProgrammeDay> days = ProgrammeReader.GetDays(Model);
 }
 <h1>@Model.Name</h1>
 <p class="lead">@(Model.Value<string>(ContentModel.Properties.Intro))</p>
 
-@if (events.Count == 0)
+@if (days.Count == 0)
 {
     <p>No published events yet.</p>
 }
 else
 {
-    <ul class="event-list">
-        @foreach (IPublishedContent item in events)
-        {
-            <li class="event-card">
-                <time>@(item.Value<DateTime>(ContentModel.Properties.StartsAt).ToString("ddd d MMM, HH:mm"))</time>
-                <h2><a href="@item.Url()">@item.Name</a></h2>
-                <p>@(item.Value<string>(ContentModel.Properties.Summary))</p>
-            </li>
-        }
-    </ul>
+    <p class="muted">All times are Tbilisi time (@Clock.OffsetLabel(days[0].Events[0].StartsAt)).</p>
+    @foreach (ProgrammeDay day in days)
+    {
+        <section class="programme-day" aria-labelledby="day-@day.Date.ToString("yyyy-MM-dd")">
+            <h2 id="day-@day.Date.ToString("yyyy-MM-dd")">@day.Date.ToString("dddd d MMMM")</h2>
+            <ul class="event-list">
+                @foreach (ProgrammeEvent item in day.Events)
+                {
+                    <li class="event-card">
+                        <div class="event-card__meta">
+                            <time datetime="@item.StartsAt.ToString("O")">@item.StartsAt.ToString("HH:mm")–@item.EndsAt.ToString("HH:mm")</time>
+                            @if (!string.IsNullOrEmpty(item.Track))
+                            {
+                                <span class="track-badge" data-track="@item.Track">@item.Track</span>
+                            }
+                        </div>
+                        <h3><a href="@item.Url">@item.Name</a></h3>
+                        <p>@item.Summary</p>
+                        <p class="muted small">@item.Venue</p>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
 }

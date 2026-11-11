@@ -1,17 +1,11 @@
 @inherits UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockGridItem>
+@inject ProgrammeReader ProgrammeReader
 @{
     var maxItems = Math.Clamp(Model.Content.Value<int>(ContentModel.Properties.MaxItems), 1, 6);
 
-    // The block lives on Home; the events live under Programme.
+    // The block lives on Home; ProgrammeReader finds the events under Programme.
     IPublishedContent? page = UmbracoContext?.PublishedRequest?.PublishedContent;
-    var events = page?.Root().Children()
-        .Where(x => x.ContentType.Alias == ContentModel.Aliases.Programme)
-        .SelectMany(programme => programme.Children())
-        .Where(x => x.ContentType.Alias == ContentModel.Aliases.FestivalEvent)
-        .Where(x => x.Value<DateTime>(ContentModel.Properties.StartsAt) >= DateTime.Now)
-        .OrderBy(x => x.Value<DateTime>(ContentModel.Properties.StartsAt))
-        .Take(maxItems)
-        .ToList() ?? [];
+    IReadOnlyList<ProgrammeEvent> events = page is null ? [] : ProgrammeReader.GetUpcoming(page, maxItems);
 }
 <section class="featured-events">
     <h2>@(Model.Content.Value<string>(ContentModel.Properties.Heading))</h2>
@@ -22,12 +16,12 @@
     else
     {
         <ul class="card-list">
-            @foreach (IPublishedContent item in events)
+            @foreach (ProgrammeEvent item in events)
             {
                 <li class="card">
-                    <time>@(item.Value<DateTime>(ContentModel.Properties.StartsAt).ToString("ddd d MMM, HH:mm"))</time>
-                    <h3><a href="@item.Url()">@item.Name</a></h3>
-                    <p>@(item.Value<string>(ContentModel.Properties.Summary))</p>
+                    <time datetime="@item.StartsAt.ToString("O")">@item.StartsAt.ToString("ddd d MMM, HH:mm")</time>
+                    <h3><a href="@item.Url">@item.Name</a></h3>
+                    <p>@item.Summary</p>
                 </li>
             }
         </ul>

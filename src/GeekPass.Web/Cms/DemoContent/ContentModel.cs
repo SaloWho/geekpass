@@ -11,7 +11,7 @@ public static class ContentModel
     /// Version of the content model created by <see cref="DemoContentSeeder"/>.
     /// Bump it whenever an existing type changes; the seeder then warns that the database must be reset (ADR-0004).
     /// </summary>
-    public const int Version = 2;
+    public const int Version = 3;
 
     public static class DocumentTypes
     {
@@ -31,6 +31,7 @@ public static class ContentModel
     public static class DataTypes
     {
         public static readonly Guid HomeBlockGrid = new("4d9e8c7b-1a2f-4b3c-9d8e-7f6a5b4c0001");
+        public static readonly Guid Track = new("4d9e8c7b-1a2f-4b3c-9d8e-7f6a5b4c0002");
     }
 
     public static class Templates
@@ -45,6 +46,9 @@ public static class ContentModel
         public static readonly Guid Home = new("c3a1e7d4-5b2f-4e8a-9c6d-7f1e2a3b0001");
         public static readonly Guid Programme = new("c3a1e7d4-5b2f-4e8a-9c6d-7f1e2a3b0002");
         public static readonly Guid CatanChampionship = new("c3a1e7d4-5b2f-4e8a-9c6d-7f1e2a3b0003");
+        public static readonly Guid WorldbuildingTalk = new("c3a1e7d4-5b2f-4e8a-9c6d-7f1e2a3b0004");
+        public static readonly Guid FirstContactPanel = new("c3a1e7d4-5b2f-4e8a-9c6d-7f1e2a3b0005");
+        public static readonly Guid LearnToPlayCorner = new("c3a1e7d4-5b2f-4e8a-9c6d-7f1e2a3b0006");
     }
 
     public static class Aliases
@@ -81,7 +85,18 @@ public static class ContentModel
         public const string StartsAt = "startsAt";
         public const string EndsAt = "endsAt";
         public const string Venue = "venue";
+        public const string Track = "track";
         public const string Bookable = "bookable";
         public const string RequestedCapacity = "requestedCapacity";
+    }
+
+    /// <summary>Festival tracks: the values of the Track dropdown.</summary>
+    public static class Tracks
+    {
+        public const string Fantasy = "Fantasy";
+        public const string SciFi = "Sci-Fi";
+        public const string Tabletop = "Tabletop";
+
+        public static readonly string[] All = [Fantasy, SciFi, Tabletop];
     }
 }
