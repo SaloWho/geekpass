@@ -106,3 +106,4 @@ src/GeekPass.Web/               Umbraco host (the single deployable)
 - One GitHub Issue becomes one small pull request. Every Issue has a goal, acceptance criteria, demo steps and one review question.
 - CI (`.github/workflows/ci.yml`) builds with warnings as errors, then boots the site on SQL Server and checks the demo pages.
 - Important decisions are recorded as ADRs in [`docs/adr`](docs/adr).
+- What we learn each week is collected in [`docs/learning`](docs/learning).
