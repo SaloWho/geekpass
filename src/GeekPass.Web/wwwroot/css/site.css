@@ -160,3 +160,28 @@ h1, h2, h3 { line-height: 1.15; letter-spacing: -0.01em; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ---------- Programme by day (Issue #4) ---------- */
+.programme-day { margin-top: 2.5rem; }
+.programme-day h2 { border-bottom: 1px solid var(--gp-border); padding-bottom: 0.5rem; }
+.event-card h3 { margin: 0.25rem 0; font-size: 1.2rem; }
+.event-card p { margin: 0.25rem 0; }
+.event-card__meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.small { font-size: 0.875rem; }
+
+.track-badge {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  color: var(--gp-primary-text);
+}
+.track-badge[data-track="Tabletop"] { color: var(--gp-accent); }
+.track-badge[data-track="Sci-Fi"] { color: #67e8f9; } /* 13.3:1 on bg */
+
+.rich-text { max-width: 42rem; }
+.rich-text ul { padding-left: 1.25rem; }

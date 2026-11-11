@@ -71,6 +71,8 @@ public sealed class DemoContentSeeder(
         await EnsureTrackCardBlockTypeAsync();
         await EnsureHomeBlockGridDataTypeAsync();
 
+        await EnsureTrackDataTypeAsync();
+
         // Children first, because a parent type lists its allowed child types.
         await EnsureFestivalEventTypeAsync();
         await EnsureProgrammeTypeAsync();
@@ -78,7 +80,10 @@ public sealed class DemoContentSeeder(
 
         await EnsureHomeContentAsync();
         await EnsureProgrammeContentAsync();
-        await EnsureCatanEventAsync();
+        foreach (DemoEvents.DemoEvent demoEvent in DemoEvents.All)
+        {
+            await EnsureEventAsync(demoEvent);
+        }
 
         keyValueService.SetValue(ModelVersionKey, ContentModel.Version.ToString(CultureInfo.InvariantCulture));
         logger.LogInformation("GeekPass demo content is ready");
@@ -153,10 +158,13 @@ public sealed class DemoContentSeeder(
                 Property(details, Properties.Subtitle, "Subtitle", UmbracoConstants.DataTypes.Guids.TextstringGuid, 0),
                 Property(details, Properties.Summary, "Summary", UmbracoConstants.DataTypes.Guids.TextareaGuid, 1, mandatory: true,
                     description: "One or two sentences for programme cards."),
-                Property(details, Properties.Description, "Description", UmbracoConstants.DataTypes.Guids.TextareaGuid, 2),
-                Property(details, Properties.StartsAt, "Starts at", UmbracoConstants.DataTypes.Guids.DatePickerWithTimeGuid, 3, mandatory: true),
-                Property(details, Properties.EndsAt, "Ends at", UmbracoConstants.DataTypes.Guids.DatePickerWithTimeGuid, 4, mandatory: true),
-                Property(details, Properties.Venue, "Venue", UmbracoConstants.DataTypes.Guids.TextstringGuid, 5, mandatory: true),
+                Property(details, Properties.Track, "Track", DataTypes.Track, 2, mandatory: true),
+                Property(details, Properties.Description, "Description", UmbracoConstants.DataTypes.Guids.RichtextEditorGuid, 3),
+                Property(details, Properties.StartsAt, "Starts at", UmbracoConstants.DataTypes.Guids.DatePickerWithTimeGuid, 4, mandatory: true,
+                    description: "Festival local time (Tbilisi)."),
+                Property(details, Properties.EndsAt, "Ends at", UmbracoConstants.DataTypes.Guids.DatePickerWithTimeGuid, 5, mandatory: true,
+                    description: "Festival local time (Tbilisi)."),
+                Property(details, Properties.Venue, "Venue", UmbracoConstants.DataTypes.Guids.TextstringGuid, 6, mandatory: true),
                 Property(booking, Properties.Bookable, "Bookable", UmbracoConstants.DataTypes.Guids.CheckboxGuid, 0,
                     description: "Guests can book a seat once the Booking module is live (Stage 2)."),
                 Property(booking, Properties.RequestedCapacity, "Requested capacity", UmbracoConstants.DataTypes.Guids.NumericGuid, 1,
@@ -207,6 +215,32 @@ public sealed class DemoContentSeeder(
                     description: "Compose the Home page from blocks."),
             ],
         });
+    }
+
+    private async Task EnsureTrackDataTypeAsync()
+    {
+        if (await dataTypeService.GetAsync(DataTypes.Track) is not null)
+        {
+            return;
+        }
+
+        IDataEditor editor = propertyEditors[UmbracoConstants.PropertyEditors.Aliases.DropDownListFlexible]
+            ?? throw new InvalidOperationException("The dropdown property editor is not registered.");
+
+        var dataType = new DataType(editor, configurationSerializer)
+        {
+            Key = DataTypes.Track,
+            Name = "GeekPass - Track",
+            DatabaseType = ValueStorageType.Nvarchar,
+            ConfigurationData = new Dictionary<string, object>
+            {
+                ["items"] = ContentModel.Tracks.All,
+                ["multiple"] = false,
+            },
+        };
+
+        Attempt<IDataType, DataTypeOperationStatus> result = await dataTypeService.CreateAsync(dataType, SuperUserKey);
+        EnsureSuccess(result.Success, "data type 'GeekPass - Track'", result.Status);
     }
 
     // ---------- Block Grid: element types and data type ----------
@@ -396,38 +430,41 @@ public sealed class DemoContentSeeder(
         await PublishAsync(Documents.Programme, "Programme");
     }
 
-    private async Task EnsureCatanEventAsync()
+    private async Task EnsureEventAsync(DemoEvents.DemoEvent demoEvent)
     {
-        if (await contentEditingService.GetAsync(Documents.CatanChampionship) is null)
+        if (await contentEditingService.GetAsync(demoEvent.Key) is null)
         {
-            // Created as a draft on purpose: publishing it is step 2 of the editor demo (README).
             await CreateContentAsync(new ContentCreateModel
             {
-                Key = Documents.CatanChampionship,
+                Key = demoEvent.Key,
                 ParentKey = Documents.Programme,
                 ContentTypeKey = DocumentTypes.FestivalEvent,
                 TemplateKey = Templates.FestivalEvent,
-                Variants = [new VariantModel { Name = "Catan Championship" }],
+                Variants = [new VariantModel { Name = demoEvent.Name }],
                 Properties =
                 [
-                    Value(Properties.Subtitle, "Settlers Cup"),
-                    Value(Properties.Summary, "Four-player Swiss rounds and a final table. Bring your best trading face."),
-                    Value(Properties.Description,
-                        "Trade, build and race to 10 victory points. Three Swiss rounds decide who plays the final table. " +
-                        "Base game rules with the official tournament variant. Boards and pieces are provided. " +
-                        "All names and data on this site are synthetic."),
-                    Value(Properties.StartsAt, "2027-05-15 11:00:00"),
-                    Value(Properties.EndsAt, "2027-05-15 17:00:00"),
-                    Value(Properties.Venue, "Hall B, Table Zone"),
-                    Value(Properties.Bookable, true),
-                    Value(Properties.RequestedCapacity, 4),
+                    Value(Properties.Subtitle, demoEvent.Subtitle),
+                    Value(Properties.Track, new[] { demoEvent.Track }), // dropdowns take a list of values
+                    Value(Properties.Summary, demoEvent.Summary),
+                    Value(Properties.Description, demoEvent.DescriptionHtml), // raw markup is accepted by the RTE
+                    Value(Properties.StartsAt, demoEvent.StartsAt),
+                    Value(Properties.EndsAt, demoEvent.EndsAt),
+                    Value(Properties.Venue, demoEvent.Venue),
+                    Value(Properties.Bookable, demoEvent.Bookable),
+                    Value(Properties.RequestedCapacity, demoEvent.Capacity),
                 ],
             });
+
+            if (demoEvent.PublishOnSeed)
+            {
+                await PublishAsync(demoEvent.Key, demoEvent.Name);
+            }
         }
 
-        if (options.Value.PublishCatanEvent)
+        // CI has no editor to click Publish, so it publishes the Catan draft too.
+        if (!demoEvent.PublishOnSeed && options.Value.PublishCatanEvent)
         {
-            await PublishAsync(Documents.CatanChampionship, "Catan Championship");
+            await PublishAsync(demoEvent.Key, demoEvent.Name);
         }
     }
 

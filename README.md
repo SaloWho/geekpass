@@ -67,6 +67,18 @@ The site runs on **https://localhost:44380**.
 4. In browser dev tools switch to a 360 px wide device. All blocks stack in one column.
 5. Featured Events shows the next upcoming *published* events, so publish the Catan event first.
 
+## Demo: programme by day (Issue #4)
+
+1. Open **https://localhost:44380/programme/**. Events are grouped by day (Saturday 15 May, Sunday 16 May),
+   in time order, each with a track badge (Fantasy, Sci-Fi, Tabletop).
+2. Publish the Catan draft. It appears on Saturday at 11:00, before the 14:00 talk.
+3. Open an event: the description is rich text, and times show the festival time zone (GMT+4).
+4. Unpublish an event: it disappears from the programme and its page returns 404.
+
+**Times:** editors type festival local time (Tbilisi). `Site/FestivalClock.cs` is the only place that turns
+that into a `DateTimeOffset`, so code can always get UTC from it. The time zone is set in
+`GeekPass:Festival:TimeZone`.
+
 ## Reset
 
 ```bash
@@ -98,11 +110,13 @@ src/GeekPass.Web/               Umbraco host (the single deployable)
   Cms/DemoContent/              content model + synthetic demo content, as code
   Views/                        Razor templates (home, programme, festivalEvent)
   Views/Partials/blockgrid/     Block Grid rendering; Components/ has one view per block type
+  Site/                         website services: FestivalClock (time zone), ProgrammeReader (Umbraco -> ProgrammeEvent)
+tests/GeekPass.Web.UnitTests/   unit tests for pure rules (time zone, grouping, upcoming)
   wwwroot/css/                  styles
 ```
 
 ## How we work
 
 - One GitHub Issue becomes one small pull request. Every Issue has a goal, acceptance criteria, demo steps and one review question.
-- CI (`.github/workflows/ci.yml`) builds with warnings as errors, then boots the site on SQL Server and checks the demo pages.
+- CI (`.github/workflows/ci.yml`) builds with warnings as errors, runs unit tests (`dotnet test`), then boots the site on SQL Server and checks the demo pages.
 - Important decisions are recorded as ADRs in [`docs/adr`](docs/adr).

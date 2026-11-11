@@ -29,6 +29,9 @@ jobs:
       - name: Build (warnings are errors)
         run: dotnet build GeekPass.slnx --no-restore -c Release
 
+      - name: Unit tests
+        run: dotnet test GeekPass.slnx --no-build -c Release --logger "console;verbosity=normal"
+
   smoke:
     name: Startup smoke test (SQL Server + unattended install + demo content)
     needs: build
@@ -87,8 +90,16 @@ jobs:
           # Featured Events block lists the published Catan event
           check "/" "/programme/catan-championship/"
           check "/programme/" "Catan Championship"
+          check "/programme/" "Saturday 15 May"
+          check "/programme/" "Sunday 16 May"
+          check "/programme/" "Worldbuilding for Fantasy Writers"
+          check "/programme/" 'data-track="Sci-Fi"'
+          # Razor HTML-encodes '+' as &#x2B;, so match the text before it
+          check "/programme/" "All times are Tbilisi time (GMT"
           check "/programme/catan-championship/" "Settlers Cup"
           check "/programme/catan-championship/" "Booking opens soon"
+          check "/programme/catan-championship/" "<li>Beginners welcome</li>"
+          check "/programme/catan-championship/" "11:00"
           if curl -sf http://localhost:5080/ | grep -q "Could not render component"; then echo "FAIL a block has no partial view"; exit 1; fi
           echo "OK   all blocks rendered"
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5080/umbraco)

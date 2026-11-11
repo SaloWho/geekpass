@@ -9,4 +9,7 @@
   <Folder Name="/src/">
     <Project Path="src/GeekPass.Web/GeekPass.Web.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GeekPass.Web.UnitTests/GeekPass.Web.UnitTests.csproj" />
+  </Folder>
 </Solution>
