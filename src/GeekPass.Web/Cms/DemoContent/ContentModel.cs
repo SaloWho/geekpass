@@ -7,11 +7,30 @@ namespace GeekPass.Web.Cms.DemoContent;
 /// </summary>
 public static class ContentModel
 {
+    /// <summary>
+    /// Version of the content model created by <see cref="DemoContentSeeder"/>.
+    /// Bump it whenever an existing type changes; the seeder then warns that the database must be reset (ADR-0004).
+    /// </summary>
+    public const int Version = 2;
+
     public static class DocumentTypes
     {
         public static readonly Guid Home = new("6a0f4a6e-2f43-4c43-9d55-1f2d7a9c0001");
         public static readonly Guid Programme = new("6a0f4a6e-2f43-4c43-9d55-1f2d7a9c0002");
         public static readonly Guid FestivalEvent = new("6a0f4a6e-2f43-4c43-9d55-1f2d7a9c0003");
+    }
+
+    /// <summary>Element types used as blocks in the Home Block Grid.</summary>
+    public static class ElementTypes
+    {
+        public static readonly Guid HeroBlock = new("6a0f4a6e-2f43-4c43-9d55-1f2d7a9c0101");
+        public static readonly Guid FeaturedEventsBlock = new("6a0f4a6e-2f43-4c43-9d55-1f2d7a9c0102");
+        public static readonly Guid TrackCardBlock = new("6a0f4a6e-2f43-4c43-9d55-1f2d7a9c0103");
+    }
+
+    public static class DataTypes
+    {
+        public static readonly Guid HomeBlockGrid = new("4d9e8c7b-1a2f-4b3c-9d8e-7f6a5b4c0001");
     }
 
     public static class Templates
@@ -33,14 +52,24 @@ public static class ContentModel
         public const string Home = "home";
         public const string Programme = "programme";
         public const string FestivalEvent = "festivalEvent";
+        public const string HeroBlock = "heroBlock";
+        public const string FeaturedEventsBlock = "featuredEventsBlock";
+        public const string TrackCardBlock = "trackCardBlock";
     }
 
     /// <summary>Property aliases, shared by the seeder and the Razor views.</summary>
     public static class Properties
     {
         // Home
-        public const string HeroTitle = "heroTitle";
-        public const string HeroSubtitle = "heroSubtitle";
+        public const string Blocks = "blocks";
+
+        // Blocks
+        public const string Title = "title";
+        public const string Text = "text";
+        public const string CtaLabel = "ctaLabel";
+        public const string CtaUrl = "ctaUrl";
+        public const string Heading = "heading";
+        public const string MaxItems = "maxItems";
 
         // Programme
         public const string Intro = "intro";

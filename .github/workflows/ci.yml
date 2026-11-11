@@ -80,9 +80,17 @@ jobs:
             echo "OK   $path contains '$expected'"
           }
           check "/" "GeekPass Fest 2027"
+          check "/" "umb-block-grid__layout-item"
+          check "/" "Coming up"
+          check "/" "Tabletop"
+          check "/" "Book a seat"
+          # Featured Events block lists the published Catan event
+          check "/" "/programme/catan-championship/"
           check "/programme/" "Catan Championship"
           check "/programme/catan-championship/" "Settlers Cup"
           check "/programme/catan-championship/" "Booking opens soon"
+          if curl -sf http://localhost:5080/ | grep -q "Could not render component"; then echo "FAIL a block has no partial view"; exit 1; fi
+          echo "OK   all blocks rendered"
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5080/umbraco)
           [ "$code" = "200" ] || { echo "FAIL backoffice returned $code"; exit 1; }
           echo "OK   /umbraco returned 200"

@@ -1,0 +1,5 @@
+@inherits UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockGridItem>
+<article class="card track-card">
+    <h3>@(Model.Content.Value<string>(ContentModel.Properties.Title))</h3>
+    <p>@(Model.Content.Value<string>(ContentModel.Properties.Text))</p>
+</article>

@@ -58,6 +58,15 @@ The site runs on **https://localhost:44380**.
 6. In the backoffice, use **Unpublish** on the event. The event page now returns 404 and the event
    disappears from the programme.
 
+## Demo: compose the Home page (Issue #3)
+
+1. In the backoffice open **Content → GeekPass Fest 2027**. The **Blocks** property is a Block Grid with
+   a Hero, a Featured Events block and three Track Cards.
+2. Drag a Track Card to another position, or change its width (4, 6 or 12 of 12 columns), then **Save and publish**.
+3. Reload **https://localhost:44380/**. The order and widths follow your change.
+4. In browser dev tools switch to a 360 px wide device. All blocks stack in one column.
+5. Featured Events shows the next upcoming *published* events, so publish the Catan event first.
+
 ## Reset
 
 ```bash
@@ -73,6 +82,7 @@ dotnet run --project src/GeekPass.Web   # installs and seeds again
 | `Cannot open database "GeekPass"` | The `db-init` job did not run. Run `docker compose run --rm db-init`. |
 | Port 1433 is in use | Set `GEEKPASS_DB_PORT=14330` in `.env` and use `localhost,14330` in the connection string. |
 | Install fails with a password error | The admin password must be at least 10 characters. |
+| "GeekPass demo content model is outdated" | The content model changed since your database was seeded (the seeder only creates, see ADR-0004). Run `docker compose down -v && docker compose up -d` and start the site again. |
 | "GeekPass demo content: creating ... failed" | Check the full error in the console and open an issue. Seeding stops on the first error on purpose. |
 
 ## Repository structure
@@ -87,6 +97,7 @@ docs/adr/                       architecture decision records
 src/GeekPass.Web/               Umbraco host (the single deployable)
   Cms/DemoContent/              content model + synthetic demo content, as code
   Views/                        Razor templates (home, programme, festivalEvent)
+  Views/Partials/blockgrid/     Block Grid rendering; Components/ has one view per block type
   wwwroot/css/                  styles
 ```
 
