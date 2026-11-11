@@ -2,30 +2,40 @@
 @{
     IPublishedContent home = Model.Root();
     IPublishedContent? programme = home.Children().FirstOrDefault(x => x.ContentType.Alias == ContentModel.Aliases.Programme);
+    bool IsCurrent(IPublishedContent? item) => item is not null && Model.Path.Split(',').Contains(item.Id.ToString());
 }
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f0d17" />
     <title>@Model.Name · GeekPass</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
-        <a class="brand" href="@home.Url()">GeekPass</a>
-        <nav>
-            @if (programme is not null)
-            {
-                <a href="@programme.Url()">Programme</a>
-            }
-        </nav>
+        <div class="site-header__inner">
+            <a class="brand" href="@home.Url()" aria-label="GeekPass home">
+                <span class="brand__mark" aria-hidden="true">◆</span> GeekPass
+            </a>
+            <nav class="site-nav" aria-label="Main">
+                @if (programme is not null)
+                {
+                    <a href="@programme.Url()" aria-current="@(IsCurrent(programme) ? "page" : null)">Programme</a>
+                    @* Booking arrives in Stage 2; until then the CTA leads to the programme. *@
+                    <a class="button button--accent button--small" href="@programme.Url()">Book a seat</a>
+                }
+            </nav>
+        </div>
     </header>
-    <main class="container">
+    <main id="main" class="container">
         @RenderBody()
     </main>
     <footer class="site-footer">
-        <p>GeekPass Fest is a learning project. All names and data are synthetic.</p>
+        <p><strong>GeekPass Fest 2027</strong> · Tbilisi</p>
+        <p class="muted">A team learning project. All names and data are synthetic.</p>
     </footer>
 </body>
 </html>

@@ -1,0 +1,14 @@
+@inherits UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockGridItem>
+@{
+    var ctaLabel = Model.Content.Value<string>(ContentModel.Properties.CtaLabel);
+    var ctaUrl = Model.Content.Value<string>(ContentModel.Properties.CtaUrl);
+}
+<section class="hero">
+    <p class="eyebrow">15–17 May 2027 · Tbilisi</p>
+    <h1>@(Model.Content.Value<string>(ContentModel.Properties.Title))</h1>
+    <p class="lead">@(Model.Content.Value<string>(ContentModel.Properties.Text))</p>
+    @if (!string.IsNullOrWhiteSpace(ctaLabel) && !string.IsNullOrWhiteSpace(ctaUrl))
+    {
+        <a class="button button--accent" href="@ctaUrl">@ctaLabel</a>
+    }
+</section>

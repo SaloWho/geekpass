@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
@@ -6,6 +7,8 @@ using Umbraco.Cms.Core.Models.ContentEditing;
 using Umbraco.Cms.Core.Models.ContentPublishing;
 using Umbraco.Cms.Core.Models.ContentTypeEditing;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.PropertyEditors;
+using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.ContentTypeEditing;
 using Umbraco.Cms.Core.Services.OperationStatus;
@@ -32,15 +35,26 @@ public sealed class DemoContentSeeder(
     IContentTypeEditingService contentTypeEditingService,
     IContentEditingService contentEditingService,
     IContentPublishingService contentPublishingService,
+    IDataTypeService dataTypeService,
+    PropertyEditorCollection propertyEditors,
+    IConfigurationEditorJsonSerializer configurationSerializer,
+    IKeyValueService keyValueService,
     ILogger<DemoContentSeeder> logger)
     : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
     // Seeding runs as the built-in administrator created by the (unattended) install.
     private static readonly Guid SuperUserKey = UmbracoConstants.Security.SuperUserKey;
 
+    private const string ModelVersionKey = "GeekPass.DemoContent.ModelVersion";
+
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled || runtimeState.Level != RuntimeLevel.Run)
+        {
+            return;
+        }
+
+        if (!await IsModelVersionCurrentAsync())
         {
             return;
         }
@@ -51,6 +65,12 @@ public sealed class DemoContentSeeder(
         await EnsureTemplateAsync(Templates.Programme, "Programme", Aliases.Programme);
         await EnsureTemplateAsync(Templates.FestivalEvent, "Festival Event", Aliases.FestivalEvent);
 
+        // Blocks before the data type that lists them, and the data type before Home, which uses it.
+        await EnsureHeroBlockTypeAsync();
+        await EnsureFeaturedEventsBlockTypeAsync();
+        await EnsureTrackCardBlockTypeAsync();
+        await EnsureHomeBlockGridDataTypeAsync();
+
         // Children first, because a parent type lists its allowed child types.
         await EnsureFestivalEventTypeAsync();
         await EnsureProgrammeTypeAsync();
@@ -60,7 +80,32 @@ public sealed class DemoContentSeeder(
         await EnsureProgrammeContentAsync();
         await EnsureCatanEventAsync();
 
+        keyValueService.SetValue(ModelVersionKey, ContentModel.Version.ToString(CultureInfo.InvariantCulture));
         logger.LogInformation("GeekPass demo content is ready");
+    }
+
+    // ---------- Model version ----------
+
+    /// <summary>
+    /// The seeder only creates; it never changes existing types (ADR-0004).
+    /// So when the model changed since this database was seeded, stop and tell the developer to reset it.
+    /// </summary>
+    private async Task<bool> IsModelVersionCurrentAsync()
+    {
+        var stored = keyValueService.GetValue(ModelVersionKey);
+        var isFreshDatabase = await contentTypeService.GetAsync(DocumentTypes.Home) is null;
+
+        if (isFreshDatabase || stored == ContentModel.Version.ToString(CultureInfo.InvariantCulture))
+        {
+            return true;
+        }
+
+        logger.LogError(
+            "GeekPass demo content model is outdated (database: {StoredVersion}, code: {CodeVersion}). " +
+            "Reset the local database with 'docker compose down -v && docker compose up -d' and restart the site.",
+            stored ?? "1",
+            ContentModel.Version);
+        return false;
     }
 
     // ---------- Templates ----------
@@ -143,7 +188,7 @@ public sealed class DemoContentSeeder(
 
     private Task EnsureHomeTypeAsync()
     {
-        var hero = Guid.Parse("0d2e4f60-1a2b-4c3d-8e9f-a0b1c2d30004");
+        var content = Guid.Parse("0d2e4f60-1a2b-4c3d-8e9f-a0b1c2d30004");
 
         return EnsureDocumentTypeAsync(new ContentTypeCreateModel
         {
@@ -155,13 +200,119 @@ public sealed class DemoContentSeeder(
             AllowedTemplateKeys = [Templates.Home],
             DefaultTemplateKey = Templates.Home,
             AllowedContentTypes = [new ContentTypeSort(DocumentTypes.Programme, 0, Aliases.Programme)],
-            Containers = [Group(hero, "Hero", 0)],
+            Containers = [Group(content, "Content", 0)],
             Properties =
             [
-                Property(hero, Properties.HeroTitle, "Hero title", UmbracoConstants.DataTypes.Guids.TextstringGuid, 0, mandatory: true),
-                Property(hero, Properties.HeroSubtitle, "Hero subtitle", UmbracoConstants.DataTypes.Guids.TextareaGuid, 1),
+                Property(content, Properties.Blocks, "Blocks", DataTypes.HomeBlockGrid, 0,
+                    description: "Compose the Home page from blocks."),
             ],
         });
+    }
+
+    // ---------- Block Grid: element types and data type ----------
+
+    private Task EnsureHeroBlockTypeAsync()
+    {
+        var group = Guid.Parse("0d2e4f60-1a2b-4c3d-8e9f-a0b1c2d30101");
+        return EnsureDocumentTypeAsync(new ContentTypeCreateModel
+        {
+            Key = ElementTypes.HeroBlock,
+            Alias = Aliases.HeroBlock,
+            Name = "Hero",
+            Icon = "icon-picture",
+            IsElement = true,
+            Containers = [Group(group, "Content", 0)],
+            Properties =
+            [
+                Property(group, Properties.Title, "Title", UmbracoConstants.DataTypes.Guids.TextstringGuid, 0, mandatory: true),
+                Property(group, Properties.Text, "Text", UmbracoConstants.DataTypes.Guids.TextareaGuid, 1),
+                Property(group, Properties.CtaLabel, "Button label", UmbracoConstants.DataTypes.Guids.TextstringGuid, 2),
+                Property(group, Properties.CtaUrl, "Button URL", UmbracoConstants.DataTypes.Guids.TextstringGuid, 3,
+                    description: "Relative URL, e.g. /programme/"),
+            ],
+        });
+    }
+
+    private Task EnsureFeaturedEventsBlockTypeAsync()
+    {
+        var group = Guid.Parse("0d2e4f60-1a2b-4c3d-8e9f-a0b1c2d30102");
+        return EnsureDocumentTypeAsync(new ContentTypeCreateModel
+        {
+            Key = ElementTypes.FeaturedEventsBlock,
+            Alias = Aliases.FeaturedEventsBlock,
+            Name = "Featured Events",
+            Icon = "icon-calendar-alt",
+            IsElement = true,
+            Containers = [Group(group, "Content", 0)],
+            Properties =
+            [
+                Property(group, Properties.Heading, "Heading", UmbracoConstants.DataTypes.Guids.TextstringGuid, 0, mandatory: true),
+                Property(group, Properties.MaxItems, "Number of events", UmbracoConstants.DataTypes.Guids.NumericGuid, 1,
+                    description: "Shows the next upcoming published events from the programme."),
+            ],
+        });
+    }
+
+    private Task EnsureTrackCardBlockTypeAsync()
+    {
+        var group = Guid.Parse("0d2e4f60-1a2b-4c3d-8e9f-a0b1c2d30103");
+        return EnsureDocumentTypeAsync(new ContentTypeCreateModel
+        {
+            Key = ElementTypes.TrackCardBlock,
+            Alias = Aliases.TrackCardBlock,
+            Name = "Track Card",
+            Icon = "icon-tag",
+            IsElement = true,
+            Containers = [Group(group, "Content", 0)],
+            Properties =
+            [
+                Property(group, Properties.Title, "Title", UmbracoConstants.DataTypes.Guids.TextstringGuid, 0, mandatory: true),
+                Property(group, Properties.Text, "Text", UmbracoConstants.DataTypes.Guids.TextareaGuid, 1),
+            ],
+        });
+    }
+
+    private async Task EnsureHomeBlockGridDataTypeAsync()
+    {
+        if (await dataTypeService.GetAsync(DataTypes.HomeBlockGrid) is not null)
+        {
+            return;
+        }
+
+        IDataEditor editor = propertyEditors[UmbracoConstants.PropertyEditors.Aliases.BlockGrid]
+            ?? throw new InvalidOperationException("The Block Grid property editor is not registered.");
+
+        // Same shape the backoffice stores when you configure a Block Grid by hand.
+        static Dictionary<string, object> Block(Guid elementTypeKey, params int[] columnSpans) => new()
+        {
+            ["contentElementTypeKey"] = elementTypeKey,
+            ["allowAtRoot"] = true,
+            ["allowInAreas"] = false,
+            ["columnSpanOptions"] = columnSpans.Select(span => new Dictionary<string, object> { ["columnSpan"] = span }).ToArray(),
+            ["rowMinSpan"] = 1,
+            ["rowMaxSpan"] = 1,
+            ["areas"] = Array.Empty<object>(),
+        };
+
+        var dataType = new DataType(editor, configurationSerializer)
+        {
+            Key = DataTypes.HomeBlockGrid,
+            Name = "GeekPass - Home Blocks",
+            DatabaseType = ValueStorageType.Ntext,
+            ConfigurationData = new Dictionary<string, object>
+            {
+                ["gridColumns"] = 12,
+                ["blocks"] = new[]
+                {
+                    Block(ElementTypes.HeroBlock, 12),
+                    Block(ElementTypes.FeaturedEventsBlock, 12),
+                    Block(ElementTypes.TrackCardBlock, 4, 6, 12),
+                },
+            },
+        };
+
+        Attempt<IDataType, DataTypeOperationStatus> result = await dataTypeService.CreateAsync(dataType, SuperUserKey);
+        EnsureSuccess(result.Success, "data type 'GeekPass - Home Blocks'", result.Status);
     }
 
     private async Task EnsureDocumentTypeAsync(ContentTypeCreateModel model)
@@ -218,11 +369,7 @@ public sealed class DemoContentSeeder(
             ContentTypeKey = DocumentTypes.Home,
             TemplateKey = Templates.Home,
             Variants = [new VariantModel { Name = "GeekPass Fest 2027" }],
-            Properties =
-            [
-                Value(Properties.HeroTitle, "GeekPass Fest 2027"),
-                Value(Properties.HeroSubtitle, "Three days of fantasy, sci-fi and tabletop games in Tbilisi. Synthetic demo data."),
-            ],
+            Properties = [Value(Properties.Blocks, HomeBlocks.Create())],
         });
         await PublishAsync(Documents.Home, "Home");
     }

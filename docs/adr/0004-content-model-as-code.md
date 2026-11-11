@@ -27,6 +27,14 @@ content with fixed keys. Every step looks the item up by key first, so it is ide
 The Catan event is created as a **draft**. Publishing it is part of the editor demo. CI sets
 `GeekPass:DemoContent:PublishCatanEvent=true` because nobody clicks Publish in CI.
 
+### Update (Issue #3): model version guard
+
+Issue #3 changed an existing type (Home got a Block Grid instead of hero fields). Because the seeder only creates,
+an old database would keep the old Home type without any error. So `ContentModel.Version` is stored in Umbraco's
+key-value table after seeding. If the database holds an older version, the seeder logs
+"GeekPass demo content model is outdated" and stops, and the developer resets the local database.
+This is enough while all data is synthetic. Once real content exists, we need real migrations (see "Revisit when").
+
 ## Trade-offs
 
 - **Plus:** no third-party dependency, so no wait for a package release compatible with each Umbraco minor version.
